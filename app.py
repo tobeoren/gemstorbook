@@ -12,14 +12,16 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
 app = Flask(__name__)
-CORS(app) # Mengizinkan web Netlify Anda untuk berkomunikasi dengan server ini
+CORS(app) 
 
 def ambil_dan_buat_pdf(url_share):
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
     
+    # Inisialisasi webdriver (Docker sudah tahu letak Chrome-nya)
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     
     try:
@@ -46,7 +48,6 @@ def ambil_dan_buat_pdf(url_share):
                 gambar = gambar.convert('RGB')
             daftar_gambar.append(gambar)
             
-        # Simpan ke dalam memori komputer sementara (bukan file fisik) agar mudah dikirim ke user
         pdf_bytes = BytesIO()
         daftar_gambar[0].save(
             pdf_bytes, format="PDF", save_all=True, append_images=daftar_gambar[1:], resolution=100.0
@@ -81,5 +82,4 @@ def api_download():
         return jsonify({"error": "Gagal menemukan atau memproses gambar"}), 500
 
 if __name__ == '__main__':
-    # Menjalankan server secara lokal
     app.run(debug=True, port=5000)
