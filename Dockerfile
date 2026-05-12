@@ -1,5 +1,5 @@
 #Gunakan sistem Linux yang sudah terpasang Python 3.11
-FROM python:3.11.18-slim
+FROM python:3.11-slim
 
 #Install dependensi sistem dan Google Chrome
 RUN apt-get update && apt-get install -y \
