@@ -1,7 +1,7 @@
-Flask==3.0.2
+Flask
 Flask-Cors==4.0.0
 requests==2.31.0
-Pillow==10.2.0
+Pillow
 selenium==4.18.1
 webdriver-manager==4.0.1
 gunicorn==21.2.0
