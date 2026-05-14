@@ -1,5 +1,6 @@
 Flask
 Flask-Cors==4.0.0
+Flask-Limiter
 requests==2.31.0
 Pillow
 selenium==4.18.1
