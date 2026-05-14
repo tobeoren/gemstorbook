@@ -13,9 +13,7 @@ app = Flask(__name__)
 
 # MENGAMANKAN SERVER: Hanya izinkan permintaan (request) dari domain Netlify Anda
 ALLOWED_ORIGINS = [
-    "https://gemstorbook.netlify.app",
-    "http://localhost",  # (Opsional) jika Anda masih ingin mengujinya di komputer sendiri
-    "http://127.0.0.1"   # (Opsional) jika Anda masih ingin mengujinya di komputer sendiri
+    "https://gemstorbook.netlify.app"
 ]
 
 CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
