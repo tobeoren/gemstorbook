@@ -25,6 +25,11 @@ def ambil_dan_buat_pdf(url_share):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     
+    # TAMBAHAN: Meringankan beban RAM server Render yang kecil
+    chrome_options.add_argument("--disable-software-rasterizer") 
+    chrome_options.add_argument("--no-zygote") 
+    chrome_options.add_argument("--single-process")
+    
     # Mengatur ukuran jendela browser yang besar (layar komputer)
     # Agar teks dan gambar tidak sempit seperti tampilan HP
     chrome_options.add_argument("--window-size=1200,1600")
@@ -102,12 +107,13 @@ def ambil_dan_buat_pdf(url_share):
         return pdf_buffer
         
     except Exception as e:
-        print(f"Error pada Selenium/Scraping: {e}")
+        pesan_error = str(e)
+        print(f"Error pada Selenium/Scraping: {pesan_error}")
         try:
             driver.quit()
         except:
             pass
-        return None
+        return {"error_detail": pesan_error} # Mengembalikan penyebab aslinya
 
 @app.route('/api/download', methods=['POST'])
 def api_download():
@@ -124,17 +130,19 @@ def api_download():
         return jsonify({"error": "URL tidak diberikan"}), 400
         
     # Proses PDF (Sekarang menangkap seluruh layar web, teks + gambar)
-    pdf_file = ambil_dan_buat_pdf(url_share)
+    hasil = ambil_dan_buat_pdf(url_share)
     
-    if pdf_file:
+    if isinstance(hasil, BytesIO):
         return send_file(
-            pdf_file, 
+            hasil, 
             as_attachment=True, 
             download_name='Storybook_Lengkap.pdf', 
             mimetype='application/pdf'
         )
+    elif isinstance(hasil, dict) and "error_detail" in hasil:
+        return jsonify({"error": f"Detail kegagalan sistem: {hasil['error_detail']}"}), 500
     else:
-        return jsonify({"error": "Gagal memproses PDF dari link tersebut. Pastikan link valid dan dapat diakses publik."}), 500
+        return jsonify({"error": "Terjadi kesalahan fatal pada server yang tidak diketahui."}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
