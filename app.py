@@ -33,70 +33,10 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# ==========================================
-# KAMUS TERJEMAHAN PESAN ERROR API (BACKEND)
-# ==========================================
-API_MESSAGES = {
-    "id": {
-        "rate_limit": "Server sibuk / batas unduhan tercapai. Harap tunggu beberapa menit sebelum mencoba lagi.",
-        "access_denied": "Akses Ditolak.",
-        "no_url": "URL tidak diberikan.",
-        "process_failed": "Gagal memproses halaman. Pastikan link valid dan terbuka untuk publik."
-    },
-    "en": {
-        "rate_limit": "Server busy / download limit reached. Please wait a few minutes before trying again.",
-        "access_denied": "Access Denied.",
-        "no_url": "URL not provided.",
-        "process_failed": "Failed to process the page. Ensure the link is valid and open to the public."
-    },
-    "ja": {
-        "rate_limit": "サーバーが混雑しているか、ダウンロード制限に達しました。数分待ってからもう一度お試しください。",
-        "access_denied": "アクセスが拒否されました。",
-        "no_url": "URLが提供されていません。",
-        "process_failed": "ページの処理に失敗しました。リンクが有効であり、一般公開されていることを確認してください。"
-    },
-    "zh": {
-        "rate_limit": "服务器繁忙/达到下载限制。请等待几分钟后再试。",
-        "access_denied": "拒绝访问。",
-        "no_url": "未提供URL。",
-        "process_failed": "处理页面失败。请确保链接有效且对公众开放。"
-    },
-    "de": {
-        "rate_limit": "Server ausgelastet / Download-Limit erreicht. Bitte warten Sie einige Minuten, bevor Sie es erneut versuchen.",
-        "access_denied": "Zugriff verweigert.",
-        "no_url": "URL nicht angegeben.",
-        "process_failed": "Fehler beim Verarbeiten der Seite. Stellen Sie sicher, dass der Link gültig und öffentlich zugänglich ist."
-    },
-    "ru": {
-        "rate_limit": "Сервер перегружен / достигнут лимит скачиваний. Пожалуйста, подождите несколько минут перед повторной попыткой.",
-        "access_denied": "Доступ запрещен.",
-        "no_url": "URL не предоставлен.",
-        "process_failed": "Не удалось обработать страницу. Убедитесь, что ссылка действительна и открыта для публики."
-    },
-    "es": {
-        "rate_limit": "Servidor ocupado / límite de descargas alcanzado. Por favor, espere unos minutos antes de volver a intentarlo.",
-        "access_denied": "Acceso denegado.",
-        "no_url": "URL no proporcionada.",
-        "process_failed": "Error al procesar la página. Asegúrese de que el enlace sea válido y esté abierto al público."
-    }
-}
-
-# Pesan kustom jika user terkena batas limit (Menyesuaikan bahasa payload)
+# Pesan kustom jika user terkena batas limit
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    lang = "id"
-    if request.is_json:
-        try:
-            data = request.get_json(silent=True)
-            if data and "lang" in data:
-                lang = data["lang"]
-        except:
-            pass
-    
-    if lang not in API_MESSAGES:
-        lang = "id"
-        
-    return jsonify(error=API_MESSAGES[lang]["rate_limit"]), 429
+    return jsonify(error="Server sibuk / batas unduhan tercapai. Harap tunggu beberapa menit sebelum mencoba lagi."), 429
 
 def proses_storybook(url_share, settings):
     chrome_options = Options()
@@ -115,20 +55,20 @@ def proses_storybook(url_share, settings):
     
     try:
         driver = webdriver.Chrome(options=chrome_options)
-        print(f"Opening URL: {url_share}")
+        print(f"Membuka URL: {url_share}")
         driver.get(url_share)
         
-        print("Waiting for book elements to load completely...")
+        print("Menunggu elemen buku dimuat sepenuhnya...")
         try:
             WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.TAG_NAME, "storybook-page"))
             )
             time.sleep(3) 
         except Exception as wait_err:
-            print(f"Slowness warning: {wait_err}")
+            print(f"Peringatan kelambatan: {wait_err}")
         
         # FASE 1: EKSTRAKSI DATA MENTAH
-        print("Starting raw data extraction from book pages...")
+        print("Memulai proses ekstraksi data mentah dari halaman buku...")
         pages_data_mentah = []
         seen_content = set()
         halaman_ke = 1
@@ -168,10 +108,10 @@ def proses_storybook(url_share, settings):
                         if item['content'] not in seen_content:
                             seen_content.add(item['content'])
                             pages_data_mentah.append(item)
-                            print(f"Successfully extracted 1 new {item['type']} page.")
+                            print(f"Berhasil mengekstrak 1 halaman {item['type']} baru.")
                 
             except Exception as e:
-                print(f"Failed to extract spread {halaman_ke}: {e}")
+                print(f"Gagal mengekstrak bentangan {halaman_ke}: {e}")
                 break
 
             bisa_lanjut = driver.execute_script("""
@@ -191,19 +131,19 @@ def proses_storybook(url_share, settings):
             """)
             
             if not bisa_lanjut:
-                print("Reached the end of the book.")
+                print("Telah mencapai akhir buku.")
                 break
                 
             time.sleep(1.5)
             halaman_ke += 1
             
         if not pages_data_mentah:
-            print("Failed to find book content.")
+            print("Gagal menemukan isi buku.")
             driver.quit()
             return None
             
         # 3. SOLUSI URUTAN HALAMAN: Memisahkan Gambar & Teks, lalu merajutnya sesuai urutan novel
-        print("Rearranging page order (Cover -> Image -> Text)...")
+        print("Menyusun ulang urutan halaman (Cover -> Gambar -> Teks)...")
         all_images = [p for p in pages_data_mentah if p['type'] == 'image']
         all_texts = [p for p in pages_data_mentah if p['type'] == 'text']
         
@@ -220,7 +160,7 @@ def proses_storybook(url_share, settings):
                 pages_data.append(all_texts[i])      # Memasukkan Teks Cerita pasangannya
                 
         # FASE 2: RENDER DINAMIS BERDASARKAN PENGATURAN USER
-        print("Extraction process complete. Re-rendering data into E-book pages...")
+        print("Proses ekstraksi selesai. Merender ulang data menjadi halaman E-book...")
         daftar_gambar_halaman = []
         
         UKURAN_KERTAS = (800, 1131) # Standar fallback
@@ -240,7 +180,7 @@ def proses_storybook(url_share, settings):
         nomor_halaman_teks = 1
         
         for idx, page in enumerate(pages_data):
-            print(f"Rendering sheet {idx+1}/{len(pages_data)}...")
+            print(f"Merender lembar {idx+1}/{len(pages_data)}...")
             
             if page['type'] == 'image':
                 try:
@@ -249,7 +189,7 @@ def proses_storybook(url_share, settings):
                     img_asli = img_asli.resize(UKURAN_KERTAS_HD, Image.Resampling.LANCZOS)
                     daftar_gambar_halaman.append(img_asli)
                 except Exception as e:
-                    print(f"Failed to download image: {e}")
+                    print(f"Gagal mengunduh gambar: {e}")
                 
             elif page['type'] == 'text':
                 driver.get("about:blank")
@@ -343,7 +283,7 @@ def proses_storybook(url_share, settings):
         driver.quit()
         
         # FASE 3: PILIHAN PENYIMPANAN (PDF vs ZIP)
-        print("Merging all pages according to selected format...")
+        print("Menyatukan semua halaman sesuai format pilihan...")
         output_bytes = BytesIO()
         
         if settings['format'] == 'zip':
@@ -370,7 +310,7 @@ def proses_storybook(url_share, settings):
             return output_bytes, 'application/pdf', 'Storybook_Lengkap.pdf'
         
     except Exception as e:
-        print(f"Error in main system: {e}")
+        print(f"Error pada sistem utama: {e}")
         try:
             driver.quit()
         except:
@@ -380,21 +320,15 @@ def proses_storybook(url_share, settings):
 @app.route('/api/download', methods=['POST'])
 @limiter.limit("5 per 10 minute")  # Aturan limit terpasang di endpoint ini
 def api_download():
-    # Mengambil payload beserta parameter bahasanya
-    data = request.get_json(silent=True) or {}
-    lang = data.get('lang', 'id')
-    
-    if lang not in API_MESSAGES:
-        lang = 'id'
-
     origin = request.headers.get('Origin')
     if origin and origin not in ALLOWED_ORIGINS:
-        return jsonify({"error": API_MESSAGES[lang]["access_denied"]}), 403
+        return jsonify({"error": "Akses Ditolak."}), 403
 
+    data = request.json
     url_share = data.get('url')
     
     if not url_share:
-        return jsonify({"error": API_MESSAGES[lang]["no_url"]}), 400
+        return jsonify({"error": "URL tidak diberikan"}), 400
         
     # Menangkap payload JSON pengaturan dari HTML
     settings = {
@@ -417,9 +351,9 @@ def api_download():
             mimetype=mime_type
         )
     else:
-        return jsonify({"error": API_MESSAGES[lang]["process_failed"]}), 502
+        return jsonify({"error": "Gagal memproses halaman. Pastikan link valid dan terbuka untuk publik."}), 502
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
-    print(f"Running server at http://0.0.0.0:{port}")
+    print(f"Menjalankan server di http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port)
